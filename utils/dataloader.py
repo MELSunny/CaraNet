@@ -24,7 +24,7 @@ class PolypDataset(data.Dataset):
                 for line in lines:
                     line=line.split('\n')[0]
                     self.images.append(os.path.join(image_root, line+'.png'))
-                    self.gts.append(os.path.join(image_root, line + '.png'))
+                    self.gts.append(os.path.join(gt_root, line + '.png'))
         else:
             self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
             self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.png')]
@@ -68,9 +68,10 @@ class PolypDataset(data.Dataset):
         
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        gt = np.asarray(gt, np.float32)
+        gt = np.asarray(gt, np.uint8)
         gt[gt!=self.select_class]=0
         gt[gt==self.select_class]=1
+        gt=Image.fromarray(gt)
         seed = np.random.randint(2147483647) # make a seed with numpy generator 
         random.seed(seed) # apply this seed to img tranfsorms
         torch.manual_seed(seed) # needed for torchvision 0.7
@@ -97,14 +98,14 @@ class PolypDataset(data.Dataset):
         self.gts = gts
 
     def rgb_loader(self, path):
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            return img.convert('RGB')
+        img = Image.open(path)
+        return img.convert('RGB')
 
     def binary_loader(self, path):
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            # return img.convert('1')
+        img = Image.open(path)
+        if img.mode=='P':
+            return img
+        else:
             return img.convert('L')
 
     def resize(self, img, gt):
@@ -121,7 +122,7 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
-def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False,split=None,select_class=select_class):
+def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False,split=None,select_class=1):
 
     dataset = PolypDataset(image_root, gt_root, trainsize, augmentation,split,select_class=select_class)
     data_loader = data.DataLoader(dataset=dataset,
@@ -143,7 +144,7 @@ class test_dataset:
                 for line in lines:
                     line=line.split('\n')[0]
                     self.images.append(os.path.join(image_root, line+'.png'))
-                    self.gts.append(os.path.join(image_root, line + '.png'))
+                    self.gts.append(os.path.join(gt_root, line + '.png'))
         else:
             self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
             self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.tif') or f.endswith('.png')]
@@ -169,11 +170,12 @@ class test_dataset:
         return image, gt, name
 
     def rgb_loader(self, path):
-        with open(path, 'rb') as f:
-            img = Image.open(f)
+            img = Image.open(path)
             return img.convert('RGB')
 
     def binary_loader(self, path):
-        with open(path, 'rb') as f:
-            img = Image.open(f)
-            return img.convert('L')
+            img = Image.open(path)
+            if img.mode=='P':
+                return img
+            else:
+                return img.convert('L')

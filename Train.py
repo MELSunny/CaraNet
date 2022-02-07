@@ -46,7 +46,9 @@ def test(model, path, testsize ,split,select_class=1):
     image_root = '{}/images/'.format(data_path)
     gt_root = '{}/masks/'.format(data_path)
     test_loader = test_dataset(image_root, gt_root, testsize ,split)
-    b=0.0
+    total_intersection=0
+    total_input=0
+    total_target=0
     print('[test_size]',test_loader.size)
     for i in range(test_loader.size):
         image, gt, name = test_loader.load_data()
@@ -64,20 +66,19 @@ def test(model, path, testsize ,split,select_class=1):
         
         input = res
         target = np.array(gt)
-        N = gt.shape
-        smooth = 1
+
         input_flat = np.reshape(input,(-1))
         target_flat = np.reshape(target,(-1))
  
         intersection = (input_flat*target_flat)
-        
-        loss =  (2 * intersection.sum() + smooth) / (input.sum() + target.sum() + smooth)
+        total_intersection+=intersection.sum()
+        total_input+=input.sum()
+        total_target+=target.sum()
 
-        a =  '{:.4f}'.format(loss)
-        a = float(a)
-        b = b + a
         
-    return b/60
+    return  (2 * total_intersection ) / (total_input + total_target )
+
+
 
 
 
@@ -122,7 +123,7 @@ def train(train_loader, model, optimizer, epoch, test_path,testsize,test_split=N
         # ---- train visualization ----
         if i % 20 == 0 or i == total_step:
             print('{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], '
-                  ' lateral-5: {:0.4f}], lateral-3: {:0.4f}], lateral-2: {:0.4f}], lateral-1: {:0.4f}]'.
+                  ' lateral-5: {:0.8f}], lateral-3: {:0.8f}], lateral-2: {:0.8f}], lateral-1: {:0.8f}]'.
                   format(datetime.now(), epoch, opt.epoch, i, total_step,
                           loss_record5.show(),loss_record3.show(),loss_record2.show(),loss_record1.show()))
     save_path = 'snapshots/{}/'.format(opt.train_save)
@@ -222,7 +223,7 @@ if __name__ == '__main__':
     image_root = '{}/image/'.format(opt.train_path)
     gt_root = '{}/mask/'.format(opt.train_path)
 
-    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation,split=opt.train_split,select_class=select_class)
+    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation,split=opt.train_split,select_class=opt.select_class)
     total_step = len(train_loader)
 
     print("#"*20, "Start Training", "#"*20)

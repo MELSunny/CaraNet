@@ -44,5 +44,4 @@ class aggregation(nn.Module):
         x = self.conv4(x3_2)
 
         x = self.conv5(x)
-        print(x.size())
         return x
