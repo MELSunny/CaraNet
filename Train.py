@@ -36,7 +36,7 @@ def structure_loss(pred, mask):
 
 
 
-def test(model, path, testsize ,split):
+def test(model, path, testsize ,split,select_class=1):
     
     ##### put ur data_path of TestDataSet/Kvasir here #####
     data_path = path
@@ -51,6 +51,8 @@ def test(model, path, testsize ,split):
     for i in range(test_loader.size):
         image, gt, name = test_loader.load_data()
         gt = np.asarray(gt, np.float32)
+        gt[gt!=select_class]=0
+        gt[gt==select_class]=1
         gt /= (gt.max() + 1e-8)
         image = image.cuda()
         
@@ -79,7 +81,7 @@ def test(model, path, testsize ,split):
 
 
 
-def train(train_loader, model, optimizer, epoch, test_path,testsize,test_split=None):
+def train(train_loader, model, optimizer, epoch, test_path,testsize,test_split=None,select_class=1  ):
     model.train()
     # ---- multi-scale training ----
     size_rates = [0.75, 1, 1.25]
@@ -131,7 +133,7 @@ def train(train_loader, model, optimizer, epoch, test_path,testsize,test_split=N
     
     
     if (epoch+1) % 1 == 0:
-        meandice = test(model,test_path,testsize,test_split)
+        meandice = test(model,test_path,testsize,test_split,select_class)
         
         fp = open('log/log.txt','a')
         fp.write(str(meandice)+'\n')
@@ -196,6 +198,8 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--test_split', type=str,
                         default=None)
+    parser.add_argument('--select_class', type=int,
+                        default=None)
     
     opt = parser.parse_args()
 
@@ -218,7 +222,7 @@ if __name__ == '__main__':
     image_root = '{}/image/'.format(opt.train_path)
     gt_root = '{}/mask/'.format(opt.train_path)
 
-    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation,split=opt.train_split)
+    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation,split=opt.train_split,select_class=select_class)
     total_step = len(train_loader)
 
     print("#"*20, "Start Training", "#"*20)

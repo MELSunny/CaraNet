@@ -11,9 +11,10 @@ class PolypDataset(data.Dataset):
     """
     dataloader for polyp segmentation tasks
     """
-    def __init__(self, image_root, gt_root, trainsize, augmentations,split=None):
+    def __init__(self, image_root, gt_root, trainsize, augmentations,split=None,select_class=1):
         self.trainsize = trainsize
         self.augmentations = augmentations
+        self.select_class=select_class
         print(self.augmentations)
         if split:
             self.images=[]
@@ -36,16 +37,16 @@ class PolypDataset(data.Dataset):
         if self.augmentations == True:
             print('Using RandomRotation, RandomFlip')
             self.img_transform = transforms.Compose([
-                transforms.RandomRotation(90, resample=False, expand=False, center=None),
-                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomRotation(45, resample=False, expand=False, center=None),
+                #transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.Resize((self.trainsize, self.trainsize)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225])])
             self.gt_transform = transforms.Compose([
-                transforms.RandomRotation(90, resample=False, expand=False, center=None),
-                transforms.RandomVerticalFlip(p=0.5),
+                transforms.RandomRotation(45, resample=False, expand=False, center=None),
+                #transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.Resize((self.trainsize, self.trainsize)),
                 transforms.ToTensor()])
@@ -67,7 +68,9 @@ class PolypDataset(data.Dataset):
         
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        
+        gt = np.asarray(gt, np.float32)
+        gt[gt!=self.select_class]=0
+        gt[gt==self.select_class]=1
         seed = np.random.randint(2147483647) # make a seed with numpy generator 
         random.seed(seed) # apply this seed to img tranfsorms
         torch.manual_seed(seed) # needed for torchvision 0.7
@@ -118,9 +121,9 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
-def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False,split=None):
+def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False,split=None,select_class=select_class):
 
-    dataset = PolypDataset(image_root, gt_root, trainsize, augmentation,split)
+    dataset = PolypDataset(image_root, gt_root, trainsize, augmentation,split,select_class=select_class)
     data_loader = data.DataLoader(dataset=dataset,
                                   batch_size=batchsize,
                                   shuffle=shuffle,
