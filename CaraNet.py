@@ -21,7 +21,7 @@ import os
 
     
 class caranet(nn.Module):
-    def __init__(self, channel=32):
+    def __init__(self, channel=32,out_channel=1):
         super().__init__()
         
          # ---- ResNet Backbone ----
@@ -33,7 +33,7 @@ class caranet(nn.Module):
         self.rfb4_1 = Conv(2048, 32,3,1,padding=1,bn_acti=True)
 
         # Partial Decoder
-        self.agg1 = aggregation(channel)
+        self.agg1 = aggregation(channel,out_channel=out_channel)
         
         self.CFP_1 = CFPModule(32, d = 8)
         self.CFP_2 = CFPModule(32, d = 8)
@@ -76,10 +76,11 @@ class caranet(nn.Module):
         x3 = self.resnet.layer3(x2)     # bs, 1024, 22, 22
         x4 = self.resnet.layer4(x3)     # bs, 2048, 11, 11
         
-        x2_rfb = self.rfb2_1(x2) # 512 - 32
-        x3_rfb = self.rfb3_1(x3) # 1024 - 32
-        x4_rfb = self.rfb4_1(x4) # 2048 - 32
-        
+        x2_rfb = self.rfb2_1(x2) # 512 - 32 (32, 44, 44)
+        x3_rfb = self.rfb3_1(x3) # 1024 - 32 (32, 22, 22)
+        x4_rfb = self.rfb4_1(x4) # 2048 - 32 (32, 11, 11)
+
+
         decoder_1 = self.agg1(x4_rfb, x3_rfb, x2_rfb) # 1,44,44
         lateral_map_1 = F.interpolate(decoder_1, scale_factor=8, mode='bilinear')
         
@@ -121,8 +122,8 @@ class caranet(nn.Module):
         ra_1 = self.ra1_conv1(aa_atten_1_o) # 32 - 32
         ra_1 = self.ra1_conv2(ra_1) # 32 - 32
         ra_1 = self.ra1_conv3(ra_1) # 32 - 1
-        
-        x_1 = ra_1 + decoder_4
+
+        x_1 = ra_1 + decoder_4  # [1, 1, 44, 44]
         lateral_map_5 = F.interpolate(x_1,scale_factor=8,mode='bilinear') 
         
 
@@ -132,7 +133,7 @@ class caranet(nn.Module):
 
 
 if __name__ == '__main__':
-    ras = caranet().cuda()
+    ras = caranet(out_channel=1).cuda()
     input_tensor = torch.randn(1, 3, 352, 352).cuda()
 
     out = ras(input_tensor)

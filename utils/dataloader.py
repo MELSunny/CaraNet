@@ -11,15 +11,27 @@ class PolypDataset(data.Dataset):
     """
     dataloader for polyp segmentation tasks
     """
-    def __init__(self, image_root, gt_root, trainsize, augmentations):
+    def __init__(self, image_root, gt_root, trainsize, augmentations,split=None):
         self.trainsize = trainsize
         self.augmentations = augmentations
         print(self.augmentations)
-        self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.png')]
-        self.images = sorted(self.images)
-        self.gts = sorted(self.gts)
-        self.filter_files()
+        if split:
+            self.images=[]
+            self.gts=[]
+            with open(os.path.join(image_root,'..',split)) as fp:
+                lines = fp.readlines()
+                for line in lines:
+                    line=line.split('\n')[0]
+                    self.images.append(os.path.join(image_root, line+'.png'))
+                    self.gts.append(os.path.join(image_root, line + '.png'))
+        else:
+            self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
+            self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.png')]
+            self.images = sorted(self.images)
+            self.gts = sorted(self.gts)
+            self.filter_files()
+
+
         self.size = len(self.images)
         if self.augmentations == True:
             print('Using RandomRotation, RandomFlip')
@@ -106,9 +118,9 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
-def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False):
+def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=4, pin_memory=True, augmentation=False,split=None):
 
-    dataset = PolypDataset(image_root, gt_root, trainsize, augmentation)
+    dataset = PolypDataset(image_root, gt_root, trainsize, augmentation,split)
     data_loader = data.DataLoader(dataset=dataset,
                                   batch_size=batchsize,
                                   shuffle=shuffle,
@@ -118,12 +130,22 @@ def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_work
 
 
 class test_dataset:
-    def __init__(self, image_root, gt_root, testsize):
+    def __init__(self, image_root, gt_root, testsize,split=None):
         self.testsize = testsize
-        self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.tif') or f.endswith('.png')]
-        self.images = sorted(self.images)
-        self.gts = sorted(self.gts)
+        if split:
+            self.images=[]
+            self.gts=[]
+            with open(os.path.join(image_root,'..',split)) as fp:
+                lines = fp.readlines()
+                for line in lines:
+                    line=line.split('\n')[0]
+                    self.images.append(os.path.join(image_root, line+'.png'))
+                    self.gts.append(os.path.join(image_root, line + '.png'))
+        else:
+            self.images = [image_root + f for f in os.listdir(image_root) if f.endswith('.jpg') or f.endswith('.png')]
+            self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.tif') or f.endswith('.png')]
+            self.images = sorted(self.images)
+            self.gts = sorted(self.gts)
         self.transform = transforms.Compose([
             transforms.Resize((self.testsize, self.testsize)),
             transforms.ToTensor(),

@@ -36,7 +36,7 @@ def structure_loss(pred, mask):
 
 
 
-def test(model, path):
+def test(model, path, testsize ,split):
     
     ##### put ur data_path of TestDataSet/Kvasir here #####
     data_path = path
@@ -45,7 +45,7 @@ def test(model, path):
     model.eval()
     image_root = '{}/images/'.format(data_path)
     gt_root = '{}/masks/'.format(data_path)
-    test_loader = test_dataset(image_root, gt_root, 352)
+    test_loader = test_dataset(image_root, gt_root, testsize ,split)
     b=0.0
     print('[test_size]',test_loader.size)
     for i in range(test_loader.size):
@@ -79,7 +79,7 @@ def test(model, path):
 
 
 
-def train(train_loader, model, optimizer, epoch, test_path):
+def train(train_loader, model, optimizer, epoch, test_path,testsize,test_split=None):
     model.train()
     # ---- multi-scale training ----
     size_rates = [0.75, 1, 1.25]
@@ -131,7 +131,7 @@ def train(train_loader, model, optimizer, epoch, test_path):
     
     
     if (epoch+1) % 1 == 0:
-        meandice = test(model,test_path)
+        meandice = test(model,test_path,testsize,test_split)
         
         fp = open('log/log.txt','a')
         fp.write(str(meandice)+'\n')
@@ -191,6 +191,11 @@ if __name__ == '__main__':
     
     parser.add_argument('--train_save', type=str,
                         default='CaraNet-best')
+
+    parser.add_argument('--train_split', type=str,
+                        default=None)
+    parser.add_argument('--test_split', type=str,
+                        default=None)
     
     opt = parser.parse_args()
 
@@ -213,11 +218,11 @@ if __name__ == '__main__':
     image_root = '{}/image/'.format(opt.train_path)
     gt_root = '{}/mask/'.format(opt.train_path)
 
-    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation)
+    train_loader = get_loader(image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, augmentation = opt.augmentation,split=opt.train_split)
     total_step = len(train_loader)
 
     print("#"*20, "Start Training", "#"*20)
 
     for epoch in range(1, opt.epoch):
         adjust_lr(optimizer, opt.lr, epoch, 0.1, 200)
-        train(train_loader, model, optimizer, epoch, opt.test_path)
+        train(train_loader, model, optimizer, epoch, opt.test_path,opt.trainsize,test_split=opt.test_split)

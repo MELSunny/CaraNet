@@ -13,7 +13,7 @@ import math
 class aggregation(nn.Module):
     # dense aggregation, it can be replaced by other aggregation previous, such as DSS, amulet, and so on.
     # used after MSF
-    def __init__(self, channel):
+    def __init__(self, channel,out_channel=1):
         super(aggregation, self).__init__()
         self.relu = nn.ReLU(True)
 
@@ -27,7 +27,7 @@ class aggregation(nn.Module):
         self.conv_concat2 = Conv(2*32, 2*32, 3,1, padding=1)
         self.conv_concat3 = Conv(3*32, 3*32, 3,1, padding=1)
         self.conv4 = Conv(3*32, 3*32, 3,1, padding=1)
-        self.conv5 = nn.Conv2d(3*32 , 1, 1)
+        self.conv5 = nn.Conv2d(3*32 , out_channel, 1)
 
     def forward(self, x1, x2, x3):
         x1_1 = x1
@@ -42,6 +42,7 @@ class aggregation(nn.Module):
         x3_2 = self.conv_concat3(x3_2)
 
         x = self.conv4(x3_2)
-        x = self.conv5(x)
 
+        x = self.conv5(x)
+        print(x.size())
         return x
