@@ -68,7 +68,7 @@ class PolypDataset(data.Dataset):
         
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        gt = np.asarray(gt, np.uint8)
+        gt = np.asarray(gt, np.float32)
         gt[gt!=self.select_class]=0
         gt[gt==self.select_class]=1
         gt=Image.fromarray(gt)
