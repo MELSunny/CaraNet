@@ -62,19 +62,18 @@ def test(model, path, testsize ,split,select_class=1):
         res = res5
         res = F.upsample(res, size=gt.shape, mode='bilinear', align_corners=False)
         res = res.sigmoid().data.cpu().numpy().squeeze()
-        res = (res - res.min()) / (res.max() - res.min() + 1e-8)
-        
-        input = res
-        target = np.array(gt)
+        #res = (res - res.min()) / (res.max() - res.min() + 1e-8)
+        thresh = 0.5
+        input = res>thresh
+        target = np.array(gt).astype(bool)
 
         input_flat = np.reshape(input,(-1))
         target_flat = np.reshape(target,(-1))
  
         intersection = (input_flat*target_flat)
-        total_intersection+=intersection.sum()
-        total_input+=input.sum()
-        total_target+=target.sum()
-
+        total_intersection+=intersection.sum().astype(int)
+        total_input+=input.sum().astype(int)
+        total_target+=target.sum().astype(int)
         
     return  (2 * total_intersection ) / (total_input + total_target )
 
@@ -230,4 +229,4 @@ if __name__ == '__main__':
 
     for epoch in range(1, opt.epoch):
         adjust_lr(optimizer, opt.lr, epoch, 0.1, 200)
-        train(train_loader, model, optimizer, epoch, opt.test_path,opt.trainsize,test_split=opt.test_split)
+        train(train_loader, model, optimizer, epoch, opt.test_path,opt.trainsize,test_split=opt.test_split,select_class=opt.select_class)

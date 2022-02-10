@@ -85,7 +85,7 @@ class caranet(nn.Module):
         lateral_map_1 = F.interpolate(decoder_1, scale_factor=8, mode='bilinear')
         
         # ------------------- atten-one -----------------------
-        decoder_2 = F.interpolate(decoder_1, scale_factor=0.25, mode='bilinear')
+        decoder_2 = F.interpolate(decoder_1, scale_factor=0.25, mode='bilinear',recompute_scale_factor=True)
         cfp_out_1 = self.CFP_3(x4_rfb) # 32 - 32
         decoder_2_ra = -1*(torch.sigmoid(decoder_2)) + 1
         aa_atten_3 = self.aa_kernel_3(cfp_out_1)
